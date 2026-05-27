@@ -7,8 +7,11 @@ RUN apt-get update && apt-get install -y \
     libssl-dev libcurl4-openssl-dev libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 安裝 Python 套件
-RUN pip3 install selenium
+# 安裝 Python 套件（使用 venv 避免 PEP 668 限制）
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install selenium
+
+ENV PATH="/opt/venv/bin:$PATH"
 
 # 設定 ChromeDriver 路徑（Debian/Ubuntu 上 chromium-driver 路徑）
 ENV CHROME_BIN=/usr/bin/chromium
