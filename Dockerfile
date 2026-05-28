@@ -31,6 +31,6 @@ RUN Rscript -e "install.packages(c( \
 COPY . /srv/shiny-server/app/
 
 # 開放 port
-EXPOSE 3838
+EXPOSE 10000
 
 CMD ["/usr/bin/shiny-server"]
