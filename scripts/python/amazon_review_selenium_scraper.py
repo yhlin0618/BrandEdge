@@ -36,6 +36,7 @@ try:
     from selenium import webdriver
     from selenium.common.exceptions import TimeoutException, WebDriverException
     from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service
     from selenium.webdriver.common.by import By
     from selenium.webdriver.remote.webdriver import WebDriver
     from selenium.webdriver.remote.webelement import WebElement
@@ -46,6 +47,7 @@ except Exception as exc:  # noqa: BLE001 - keep CLI JSON contract when selenium 
     TimeoutException = Exception  # type: ignore[misc,assignment]
     WebDriverException = Exception  # type: ignore[misc,assignment]
     Options = None  # type: ignore[assignment]
+    Service = None  # type: ignore[assignment]
     By = None  # type: ignore[assignment]
     EC = None  # type: ignore[assignment]
     WebDriverWait = None  # type: ignore[assignment]
@@ -245,6 +247,10 @@ def build_driver() -> WebDriver:
 
     log("Building Chrome Selenium driver.")
     options = Options()
+    chrome_bin = os.getenv("CHROME_BIN", "").strip()
+    if chrome_bin and Path(chrome_bin).exists():
+        options.binary_location = chrome_bin
+        log(f"Using Chrome binary from CHROME_BIN: {chrome_bin}")
     if parse_bool_env("AMAZON_REVIEW_HEADLESS", default=True):
         options.add_argument("--headless=new")
     options.add_argument("--window-size=1440,1400")
@@ -256,7 +262,14 @@ def build_driver() -> WebDriver:
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
 
-    driver = webdriver.Chrome(options=options)
+    chromedriver_path = os.getenv("CHROMEDRIVER_PATH", "").strip()
+    if chromedriver_path and Path(chromedriver_path).exists() and Service is not None:
+        log(f"Using ChromeDriver from CHROMEDRIVER_PATH: {chromedriver_path}")
+        driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
+    else:
+        if chromedriver_path:
+            log(f"CHROMEDRIVER_PATH is set but not usable: {chromedriver_path}")
+        driver = webdriver.Chrome(options=options)
     driver.set_page_load_timeout(45)
     # Keep implicit waits low because review parsing probes several fallback selectors.
     # Missing selectors are common on Amazon pages and otherwise add seconds per block.
