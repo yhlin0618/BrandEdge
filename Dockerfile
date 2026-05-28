@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev libmariadb-dev \
     libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libmariadb.so.3 /usr/lib/x86_64-linux-gnu/libmysqlclient.so.21 \
+    && ldconfig \
     && rm -rf /var/lib/apt/lists/*
 
 # 安裝 Google Chrome stable（官方 .deb，比 Ubuntu apt 的 chromium 更穩定）
