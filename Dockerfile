@@ -27,6 +27,9 @@ RUN Rscript -e "install.packages(c( \
     'yaml', 'readxl', 'writexl', 'pool', 'waiter' \
 ), repos='https://cran.rstudio.com/')"
 
+# 覆蓋 Shiny Server 預設設定檔（必須在 COPY . 之前單獨複製）
+COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
+
 # 複製 app 到 Shiny Server 目錄
 COPY . /srv/shiny-server/app/
 
