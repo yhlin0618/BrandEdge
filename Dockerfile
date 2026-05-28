@@ -5,11 +5,9 @@ RUN apt-get update && apt-get install -y \
     python3 python3-pip python3-venv \
     wget gnupg ca-certificates \
     libssl-dev libcurl4-openssl-dev libxml2-dev \
-    libpq-dev libmariadb-dev \
+    libpq-dev default-libmysqlclient-dev \
     libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    && ln -sf /usr/lib/x86_64-linux-gnu/libmariadb.so.3 /usr/lib/x86_64-linux-gnu/libmysqlclient.so.21 \
-    && ldconfig \
     && rm -rf /var/lib/apt/lists/*
 
 # 安裝 Google Chrome stable（官方 .deb，比 Ubuntu apt 的 chromium 更穩定）
