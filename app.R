@@ -1126,7 +1126,7 @@ server <- function(input, output, session) {
   amazon_review_status <- reactiveVal(NULL)
   amazon_review_error <- reactiveVal(NULL)
   amazon_review_timing <- reactiveVal(NULL)
-  AMAZON_REVIEW_MAX_ASINS <- 41L
+  AMAZON_REVIEW_MAX_ASINS <- 5L
 
   # 進度資訊
   progress_info <- reactiveVal(list(start=NULL, done=0, total=0))
@@ -1844,21 +1844,56 @@ server <- function(input, output, session) {
       amazon_review_timing(NULL)
 
       tryCatch({
-        scrape_response <- run_amazon_bsr_scraper(asin_df$asin)
-        scrape_results <- scrape_response$results
+        withProgress(message = "Amazon 資料查詢中", value = 0, {
+          incProgress(0.1, detail = "檢查 ASIN 輸入...")
+          amazon_rank_status("Amazon 同產品類別 ASIN 查詢中...")
 
-        if (is.null(scrape_results) ||
-            (is.data.frame(scrape_results) && nrow(scrape_results) == 0) ||
-            (!is.data.frame(scrape_results) && length(scrape_results) == 0)) {
-          error_message <- scrape_response$error_message %||% "找不到該類別的 Top 10 商品 ASIN。"
+          incProgress(0.25, detail = "查詢 Amazon 同產品類別排行...")
+          scrape_response <- run_amazon_bsr_scraper(asin_df$asin)
+          scrape_results <- scrape_response$results
+
+          incProgress(0.15, detail = "整理競品 ASIN 清單...")
+          if (is.null(scrape_results) ||
+              (is.data.frame(scrape_results) && nrow(scrape_results) == 0) ||
+              (!is.data.frame(scrape_results) && length(scrape_results) == 0)) {
+            error_message <- scrape_response$error_message %||% "找不到該類別的 Top 10 商品 ASIN。"
+            combined_results <- merge_user_competitors(
+              scrape_results = data.frame(),
+              competitor_df = upload_result$competitor_asin_data(),
+              input_asin = asin_df$asin
+            )
+            if (nrow(combined_results) > 0) {
+              amazon_rank_results(combined_results)
+            }
+
+            incProgress(0.35, detail = "抓取 Amazon 評論資料...")
+            tryCatch({
+              run_amazon_review_preview(asin_df$asin, combined_results, upload_result$reviews_per_asin())
+            }, error = function(review_error_obj) {
+              amazon_review_status(NULL)
+              amazon_review_error(review_error_obj$message)
+              showNotification(review_error_obj$message, type = "warning", duration = 8)
+            })
+            amazon_rank_error(error_message)
+            amazon_rank_status(NULL)
+            incProgress(0.15, detail = "完成")
+            return()
+          }
+
+          if (!is.data.frame(scrape_results)) {
+            scrape_results <- as.data.frame(scrape_results, stringsAsFactors = FALSE)
+          }
+
           combined_results <- merge_user_competitors(
-            scrape_results = data.frame(),
+            scrape_results = scrape_results,
             competitor_df = upload_result$competitor_asin_data(),
             input_asin = asin_df$asin
           )
-          if (nrow(combined_results) > 0) {
-            amazon_rank_results(combined_results)
-          }
+
+          amazon_rank_results(combined_results)
+          amazon_rank_status("Amazon 同產品類別競品查詢完成")
+
+          incProgress(0.35, detail = "抓取 Amazon 評論資料...")
           tryCatch({
             run_amazon_review_preview(asin_df$asin, combined_results, upload_result$reviews_per_asin())
           }, error = function(review_error_obj) {
@@ -1866,35 +1901,12 @@ server <- function(input, output, session) {
             amazon_review_error(review_error_obj$message)
             showNotification(review_error_obj$message, type = "warning", duration = 8)
           })
-          amazon_rank_error(error_message)
-          amazon_rank_status(NULL)
-          return()
-        }
 
-        if (!is.data.frame(scrape_results)) {
-          scrape_results <- as.data.frame(scrape_results, stringsAsFactors = FALSE)
-        }
-
-        combined_results <- merge_user_competitors(
-          scrape_results = scrape_results,
-          competitor_df = upload_result$competitor_asin_data(),
-          input_asin = asin_df$asin
-        )
-
-        amazon_rank_results(combined_results)
-        amazon_rank_status("Amazon 同產品類別競品查詢完成")
-
-        tryCatch({
-          run_amazon_review_preview(asin_df$asin, combined_results, upload_result$reviews_per_asin())
-        }, error = function(review_error_obj) {
-          amazon_review_status(NULL)
-          amazon_review_error(review_error_obj$message)
-          showNotification(review_error_obj$message, type = "warning", duration = 8)
+          incProgress(0.15, detail = "建立分析資料...")
+          if (!is.null(scrape_response$error_message) && nzchar(scrape_response$error_message)) {
+            showNotification(scrape_response$error_message, type = "warning", duration = 8)
+          }
         })
-
-        if (!is.null(scrape_response$error_message) && nzchar(scrape_response$error_message)) {
-          showNotification(scrape_response$error_message, type = "warning", duration = 8)
-        }
       }, error = function(e) {
         amazon_rank_results(NULL)
         amazon_rank_status(NULL)
