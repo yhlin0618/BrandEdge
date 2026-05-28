@@ -51,9 +51,6 @@ REQUIRED_PACKAGES <- c(
   # 環境設定
   "dotenv",
   
-  # 資料庫相關
-  "duckdb",
-  
   # 平行處理
   "future",
   "furrr",
@@ -122,7 +119,6 @@ load_packages <- function() {
     library(bs4Dash)
     library(dotenv)
     library(plotly)
-    library(duckdb)
     library(httr2)
     library(future)
     library(furrr)

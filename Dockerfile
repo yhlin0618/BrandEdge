@@ -24,7 +24,7 @@ ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 RUN Rscript -e "install.packages(c( \
     'shiny', 'bs4Dash', 'shinyjs', 'shinyWidgets', \
     'DT', 'DBI', 'RSQLite', 'RPostgres', \
-    'RMariaDB', 'duckdb', \
+    'RMariaDB', \
     'dplyr', 'tidyr', 'ggplot2', 'plotly', 'GGally', \
     'tidyverse', 'stringr', 'tibble', 'purrr', \
     'httr', 'httr2', 'jsonlite', \
